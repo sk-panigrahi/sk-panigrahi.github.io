@@ -13,7 +13,7 @@
     </url>
     <url>
         <loc>https://sk-panigrahi.github.io/#projects</loc>
-        <changefreq=monthly</changefreq>
+        <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
@@ -21,6 +21,9 @@
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
+
+    <!--External urls-->
+
     <url>
         <loc>https://matrapin.netlify.app/</loc>
         <changefreq>yearly</changefreq>
@@ -41,4 +44,28 @@
         <changefreq>yearly</changefreq>
         <priority>0.5</priority>
     </url>
+    <!--Gallery-->
+     <url>
+        <loc>https://sk-panigrahi.github.io/gallery.html</loc>
+        <lastmod>2025-02-03T16:42:14+00:00</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+        <image:image>
+            <image:loc>https://sk-panigrahi.github.io/Images/my-photo.png</image:loc>
+            <image:title>Profile Picture</image:title>
+        </image:image>
+        <image:image>
+            <image:loc>https://sk-panigrahi.github.io/Images/ChessGame.jpg</image:loc>
+            <image:title>Chess Tournament at IISER Berhampur</image:title>
+        </image:image>
+        <image:image>
+            <image:loc>https://sk-panigrahi.github.io/Images/PhyLab_ESR.jpg</image:loc>
+            <image:title>Electron Spin Resonance Experiment</image:title>
+        </image:image>
+        <image:image>
+            <image:loc>https://sk-panigrahi.github.io/Images/PhyLab_Xray.jpg</image:loc>
+            <image:title>X-ray Diffraction in Physics Lab</image:title>
+        </image:image>
+    </url>
+    
 </urlset>
