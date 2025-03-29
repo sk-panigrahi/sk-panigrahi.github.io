@@ -89,3 +89,33 @@ footer {
     padding: 20px;
     margin-top: 40px;
 }
+.gallery-container {
+    display: flex;
+    flex-wrap: wrap; /* Ensures responsiveness */
+    gap: 1px; /* Space between images */
+    justify-content: center; /* Centers images */
+}
+
+figure {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+img {
+    height: 200px; /* Fixed height */
+    width: auto; /* Adjust width automatically */
+    object-fit: cover; /* Ensures images don’t stretch */
+    border-radius: 10px; /* Optional */
+}
+
+figcaption {
+    font-size: 14px;
+    color: #ccc;
+    text-align: justify;
+    margin-top: 5px;
+    max-width: 250px; /* Limits width so text wraps */
+    word-wrap: break-word; /* Ensures text wraps properly */
+    white-space: normal; /* Allows multiline text */
+}
+
