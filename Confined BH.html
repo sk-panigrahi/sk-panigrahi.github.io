@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Black Hole Bomb — Superradiant Instability</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --bg:      #03050d;
+  --deep:    #060a16;
+  --panel:   #080d1c;
+  --border:  #141f3a;
+  --ergo:    #ff6b35;
+  --mirror:  #7eb8f7;
+  --boson:   #ffe066;
+  --amp:     #06d6a0;
+  --bh:      #0a0a0a;
+  --text:    #c5d5ee;
+  --muted:   #3a4f78;
+  --horizon: #ff3c5f;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 12px 30px;
+  overflow-x: hidden;
+}
+
+/* starfield */
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background-image:
+    radial-gradient(1px 1px at 15% 20%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 42% 65%, rgba(255,255,255,0.25) 0%, transparent 100%),
+    radial-gradient(1px 1px at 73% 12%, rgba(255,255,255,0.3)  0%, transparent 100%),
+    radial-gradient(1px 1px at 88% 47%, rgba(255,255,255,0.2)  0%, transparent 100%),
+    radial-gradient(1px 1px at 5%  81%, rgba(255,255,255,0.28) 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 90%, rgba(255,255,255,0.18) 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 40%, rgba(255,255,255,0.22) 0%, transparent 100%),
+    radial-gradient(1px 1px at 95% 78%, rgba(255,255,255,0.32) 0%, transparent 100%);
+  pointer-events:none; z-index:0;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 18px;
+  position: relative; z-index:1;
+}
+
+header h1 {
+  font-family: 'Crimson Pro', serif;
+  font-style: italic;
+  font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+  color: var(--ergo);
+  letter-spacing: 0.03em;
+  text-shadow: 0 0 30px rgba(255,107,53,0.4);
+}
+
+header p {
+  font-size: 0.65rem;
+  color: var(--muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 860px;
+  position: relative; z-index:1;
+}
+
+/* ── Canvas ── */
+canvas#viz {
+  background: var(--deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  display: block;
+  box-shadow: 0 0 40px rgba(255,107,53,0.06);
+}
+
+/* ── Bottom row ── */
+.bottom {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 12px 14px;
+}
+
+.ptitle {
+  font-size: 0.58rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 5px;
+  margin-bottom: 9px;
+}
+
+.srow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  margin-bottom: 5px;
+  align-items: baseline;
+}
+.slabel { color: var(--muted); }
+.sval   { font-weight: 600; font-size: 0.78rem; }
+.c-ergo   { color: var(--ergo); }
+.c-mirror { color: var(--mirror); }
+.c-amp    { color: var(--amp); }
+.c-boson  { color: var(--boson); }
+.c-red    { color: var(--horizon); }
+
+/* amplitude bar */
+.amp-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+.amp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--amp), var(--ergo));
+  border-radius: 3px;
+  transition: width 0.1s;
+}
+
+/* bounce counter */
+.bounce-counter {
+  font-size: 2rem;
+  color: var(--boson);
+  text-align: center;
+  font-family: 'Crimson Pro', serif;
+  margin: 4px 0;
+  text-shadow: 0 0 20px rgba(255,224,102,0.5);
+}
+
+/* formula */
+.formula-bar {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--ergo);
+  padding: 9px 14px;
+  width: 100%;
+  font-size: 0.68rem;
+  color: var(--boson);
+  border-radius: 0 3px 3px 0;
+  line-height: 2;
+}
+.formula-bar span { color: var(--muted); font-size: 0.61rem; }
+
+/* controls */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.cg {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.clabel {
+  font-size: 0.58rem; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.1em;
+}
+.cval { font-size: 0.66rem; color: var(--ergo); font-weight: 600; }
+
+input[type=range] {
+  -webkit-appearance: none;
+  width: 110px; height: 3px;
+  background: var(--border); border-radius: 2px; outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 11px; height: 11px;
+  border-radius: 50%; background: var(--ergo); cursor: pointer;
+}
+
+button {
+  background: transparent;
+  border: 1px solid var(--ergo);
+  color: var(--ergo);
+  padding: 6px 16px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.15s;
+}
+button:hover { background: var(--ergo); color: var(--bg); }
+button.secondary {
+  border-color: var(--mirror); color: var(--mirror);
+}
+button.secondary:hover { background: var(--mirror); color: var(--bg); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Black Hole Bomb</h1>
+  <p>Superradiant Instability · Press–Teukolsky 1972 · Kerr Ergoregion + Mirror Confinement</p>
+</header>
+
+<div class="main">
+
+<canvas id="viz" width="720" height="400"></canvas>
+
+<div class="controls">
+  <div class="cg">
+    <span class="clabel">Ω<sub>H</sub> (horizon)</span>
+    <input type="range" id="omegaH" min="0.5" max="4" step="0.1" value="2.2">
+    <span class="cval" id="omegaHval">2.2</span>
+  </div>
+  <div class="cg">
+    <span class="clabel">Amplification η</span>
+    <input type="range" id="eta" min="1.05" max="2.5" step="0.05" value="1.35">
+    <span class="cval" id="etaval">1.35×</span>
+  </div>
+  <div class="cg">
+    <span class="clabel">Mirror radius r<sub>m</sub></span>
+    <input type="range" id="rm" min="120" max="200" step="5" value="160">
+    <span class="cval" id="rmval">160</span>
+  </div>
+  <div class="cg">
+    <span class="clabel">Boson mass μ</span>
+    <input type="range" id="mu" min="0.1" max="1.5" step="0.1" value="0.5">
+    <span class="cval" id="muval">0.5</span>
+  </div>
+  <button id="startBtn">Trigger</button>
+  <button id="resetBtn" class="secondary">Reset</button>
+</div>
+
+<div class="bottom">
+  <div class="panel">
+    <div class="ptitle">Instability Parameters</div>
+    <div class="srow"><span class="slabel">Ω_H</span>
+      <span class="sval c-ergo" id="s_omegaH">—</span></div>
+    <div class="srow"><span class="slabel">ω_R (mode freq)</span>
+      <span class="sval c-boson" id="s_omegaR">—</span></div>
+    <div class="srow"><span class="slabel">Condition ω < mΩ_H</span>
+      <span class="sval" id="s_cond">—</span></div>
+    <div class="srow"><span class="slabel">η (per bounce)</span>
+      <span class="sval c-amp" id="s_eta">—</span></div>
+    <div class="srow"><span class="slabel">μ (boson mass)</span>
+      <span class="sval c-mirror" id="s_mu">—</span></div>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle">Amplitude Growth</div>
+    <div class="bounce-counter" id="bounceCount">0</div>
+    <div class="srow"><span class="slabel">Bounces n</span>
+      <span class="sval c-boson" id="s_n">0</span></div>
+    <div class="srow"><span class="slabel">A / A₀ = η^n</span>
+      <span class="sval c-amp" id="s_amp">1.00</span></div>
+    <div class="srow"><span class="slabel">Energy ∝ A²</span>
+      <span class="sval c-ergo" id="s_energy">1.00</span></div>
+    <div class="amp-bar-bg">
+      <div class="amp-bar-fill" id="ampBar" style="width:2%"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle">Instability Rate</div>
+    <div class="srow"><span class="slabel">Growth rate Γ</span>
+      <span class="sval c-ergo" id="s_gamma">—</span></div>
+    <div class="srow"><span class="slabel">e-folding time</span>
+      <span class="sval c-amp" id="s_efold">—</span></div>
+    <div class="srow"><span class="slabel">Phase</span>
+      <span class="sval" id="s_phase">—</span></div>
+    <div class="srow"><span class="slabel">Regime</span>
+      <span class="sval c-boson" id="s_regime">—</span></div>
+    <div class="srow"><span class="slabel">Status</span>
+      <span class="sval c-amp" id="s_status">IDLE</span></div>
+  </div>
+</div>
+
+<div class="formula-bar">
+  <span>Superradiance condition:</span>  ω &lt; mΩ_H &nbsp;⟹&nbsp; |R_ω|² &gt; 1 &nbsp;(reflection amplification)<br>
+  <span>Bomb instability:</span>  A_n = η^n · A₀  &nbsp;→&nbsp;  ∞ &nbsp;(exponential growth between mirror and horizon)<br>
+  <span>Instability rate:</span>  Γ ~ (mΩ_H − ω) · (μ r_m)^{2ℓ+4}  &nbsp;[Press &amp; Teukolsky 1972]
+</div>
+
+</div><!-- .main -->
+
+<script>
+const canvas = document.getElementById('viz');
+const ctx    = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const cx = W/2, cy = H/2;
+
+// ── State ──────────────────────────────────────────────────────────────────
+let OmegaH = 2.2, eta = 1.35, Rm = 160, mu = 0.5;
+let running = false;
+let bounces = 0;
+let amplitude = 1.0;
+let wavePacks = [];
+let bhAngle   = 0;
+let time      = 0;
+let ergoFlash = 0;
+let mirrorFlash = 0;
+
+// Geometry
+const R_BH    = 28;   // event horizon radius (px)
+const R_ERGO  = 52;   // ergosphere radius (px)
+
+// ── Controls ───────────────────────────────────────────────────────────────
+function readControls() {
+  OmegaH = parseFloat(document.getElementById('omegaH').value);
+  eta    = parseFloat(document.getElementById('eta').value);
+  Rm     = parseFloat(document.getElementById('rm').value);
+  mu     = parseFloat(document.getElementById('mu').value);
+  document.getElementById('omegaHval').textContent = OmegaH.toFixed(1);
+  document.getElementById('etaval').textContent    = eta.toFixed(2) + '×';
+  document.getElementById('rmval').textContent     = Rm.toFixed(0);
+  document.getElementById('muval').textContent     = mu.toFixed(1);
+  updateStats();
+}
+['omegaH','eta','rm','mu'].forEach(id =>
+  document.getElementById(id).addEventListener('input', readControls)
+);
+
+function updateStats() {
+  const omegaR = mu * 0.6;
+  const isSR   = omegaR < OmegaH;
+  const Gamma  = isSR ? (OmegaH - omegaR) * Math.pow(mu * Rm * 0.004, 3) : 0;
+  const efold  = Gamma > 0 ? (1/Gamma).toFixed(1) : '∞';
+
+  document.getElementById('s_omegaH').textContent = OmegaH.toFixed(2);
+  document.getElementById('s_omegaR').textContent = omegaR.toFixed(3);
+  const condEl = document.getElementById('s_cond');
+  condEl.textContent = isSR ? '✓ YES' : '✗ NO';
+  condEl.style.color = isSR ? 'var(--amp)' : 'var(--horizon)';
+  document.getElementById('s_eta').textContent   = eta.toFixed(3) + '×';
+  document.getElementById('s_mu').textContent    = mu.toFixed(2);
+  document.getElementById('s_gamma').textContent = Gamma.toFixed(5);
+  document.getElementById('s_efold').textContent = efold;
+  document.getElementById('s_regime').textContent = isSR ? 'UNSTABLE' : 'STABLE';
+  document.getElementById('s_regime').style.color = isSR ? 'var(--ergo)' : 'var(--mirror)';
+}
+
+// ── Wave packet class ──────────────────────────────────────────────────────
+class WavePack {
+  constructor(angle, direction, amp) {
+    this.angle     = angle;     // angular position (rad)
+    this.r         = R_ERGO + 4;
+    this.direction = direction; // 1 = outward, -1 = inward
+    this.amp       = amp;
+    this.alive     = true;
+    this.age       = 0;
+    this.trail     = [];
+    this.wavy      = Math.random() * Math.PI * 2;
+  }
+
+  update(dt) {
+    this.age += dt;
+    this.wavy += dt * 8;
+    const speed = 55; // px/s
+    this.r += this.direction * speed * dt;
+
+    // store trail
+    const x = cx + this.r * Math.cos(this.angle);
+    const y = cy + this.r * Math.sin(this.angle);
+    this.trail.push({x, y, a: this.amp});
+    if (this.trail.length > 30) this.trail.shift();
+
+    // Hit mirror → reflect and amplify
+    if (this.direction === 1 && this.r >= Rm) {
+      this.r = Rm;
+      this.direction = -1;
+      this.amp *= eta;
+      bounces++;
+      amplitude = this.amp;
+      mirrorFlash = 1.0;
+      updateBounceDisplay();
+    }
+
+    // Hit ergo → reflect with boost already applied
+    if (this.direction === -1 && this.r <= R_ERGO + 2) {
+      this.r = R_ERGO + 4;
+      this.direction = 1;
+      ergoFlash = 1.0;
+      // Spawn new outgoing with amplified amp
+      if (running && this.amp < 80) {
+        wavePacks.push(new WavePack(this.angle + (Math.random()-0.5)*0.3, 1, this.amp));
+      }
+      if (this.amp > 80) this.alive = false;
+    }
+
+    // Out of bounds
+    if (this.r > Rm + 10 || this.r < R_BH) this.alive = false;
+  }
+
+  draw() {
+    if (!this.alive) return;
+    const x = cx + this.r * Math.cos(this.angle);
+    const y = cy + this.r * Math.sin(this.angle);
+
+    // Trail
+    for (let i = 0; i < this.trail.length - 1; i++) {
+      const t0 = this.trail[i], t1 = this.trail[i+1];
+      const ta = (i / this.trail.length);
+      ctx.beginPath();
+      ctx.moveTo(t0.x, t0.y);
+      ctx.lineTo(t1.x, t1.y);
+      const brightness = Math.min(1, this.amp / 12);
+      const r = Math.round(255 * brightness + 255 * (1-brightness) * 0.99);
+      const g = Math.round(224 * (1-brightness) + 100 * brightness);
+      const b = Math.round(102 * (1-brightness));
+      ctx.strokeStyle = `rgba(${r},${g},${b},${ta * 0.6})`;
+      ctx.lineWidth = 1 + brightness * 1.5;
+      ctx.stroke();
+    }
+
+    // Wavy body (sinusoidal blob)
+    const sz = 4 + Math.min(this.amp * 0.4, 14);
+    const brightness = Math.min(1, this.amp / 15);
+    const wc = brightness > 0.5
+      ? `rgba(255,${Math.round(100 + 124*(1-brightness))},50,0.9)`
+      : `rgba(255,224,102,0.85)`;
+
+    // Draw squiggly wave symbol
+    ctx.beginPath();
+    for (let t = -1; t <= 1; t += 0.05) {
+      const wx = x + t * sz;
+      const wy = y + Math.sin(t * Math.PI * 2 + this.wavy) * (sz * 0.4);
+      t === -1 ? ctx.moveTo(wx, wy) : ctx.lineTo(wx, wy);
+    }
+    ctx.strokeStyle = wc;
+    ctx.lineWidth = 1.5 + brightness;
+    ctx.stroke();
+
+    // Arrow tip
+    const dir = this.direction;
+    ctx.beginPath();
+    ctx.moveTo(x + dir * sz, y);
+    ctx.lineTo(x + dir * (sz + 6), y);
+    ctx.strokeStyle = wc;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x + dir * (sz + 6), y);
+    ctx.lineTo(x + dir * (sz + 2), y - 3);
+    ctx.lineTo(x + dir * (sz + 2), y + 3);
+    ctx.closePath();
+    ctx.fillStyle = wc;
+    ctx.fill();
+  }
+}
+
+// ── Draw ───────────────────────────────────────────────────────────────────
+function drawBG() {
+  // subtle radial gradient
+  const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, Rm * 1.4);
+  grd.addColorStop(0,   'rgba(255,107,53,0.04)');
+  grd.addColorStop(0.4, 'rgba(10,15,35,0.0)');
+  grd.addColorStop(1,   'rgba(3,5,13,0.0)');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, W, H);
+}
+
+function drawMirror() {
+  // Mirror circle (dashed)
+  ctx.save();
+  ctx.setLineDash([6, 5]);
+  ctx.beginPath();
+  ctx.arc(cx, cy, Rm, 0, Math.PI * 2);
+  const mAlpha = 0.5 + mirrorFlash * 0.5;
+  ctx.strokeStyle = `rgba(126,184,247,${mAlpha})`;
+  ctx.lineWidth = mirrorFlash > 0.1 ? 2.5 : 1.5;
+  ctx.stroke();
+  ctx.restore();
+
+  if (mirrorFlash > 0.05) {
+    const gm = ctx.createRadialGradient(cx, cy, Rm * 0.9, cx, cy, Rm * 1.1);
+    gm.addColorStop(0, `rgba(126,184,247,${mirrorFlash * 0.15})`);
+    gm.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = gm;
+    ctx.beginPath();
+    ctx.arc(cx, cy, Rm * 1.1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // label
+  ctx.font = '10px Share Tech Mono';
+  ctx.fillStyle = `rgba(126,184,247,0.7)`;
+  ctx.textAlign = 'center';
+  ctx.fillText('MIRROR  r = rₘ', cx, cy - Rm - 8);
+}
+
+function drawErgosphere() {
+  // Ergosphere glow
+  const ge = ctx.createRadialGradient(cx, cy, R_ERGO * 0.6, cx, cy, R_ERGO * 1.3);
+  ge.addColorStop(0, `rgba(255,107,53,${0.08 + ergoFlash * 0.18})`);
+  ge.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = ge;
+  ctx.beginPath();
+  ctx.arc(cx, cy, R_ERGO * 1.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Ergosphere boundary (rotating pattern)
+  const ne = 20;
+  ctx.save();
+  ctx.rotate(bhAngle * 0.3);
+  for (let i = 0; i < ne; i++) {
+    const a0 = (i / ne) * Math.PI * 2;
+    const a1 = a0 + Math.PI / ne * 0.7;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R_ERGO, a0, a1);
+    ctx.strokeStyle = `rgba(255,107,53,${0.55 + ergoFlash * 0.3})`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  ctx.font = '9px Share Tech Mono';
+  ctx.fillStyle = 'rgba(255,107,53,0.7)';
+  ctx.textAlign = 'left';
+  ctx.fillText('ERGOREGION', cx + R_ERGO * 0.7 + 4, cy - 6);
+}
+
+function drawEventHorizon() {
+  // Rotating frame-dragging lines
+  ctx.save();
+  ctx.rotate(bhAngle);
+  const nh = 6;
+  for (let i = 0; i < nh; i++) {
+    const a = (i / nh) * Math.PI * 2;
+    for (let r = R_ERGO * 0.3; r < R_ERGO * 0.9; r += 6) {
+      const spiral = a + (r / R_ERGO) * 1.2;
+      const x = cx + r * Math.cos(spiral);
+      const y = cy + r * Math.sin(spiral);
+      ctx.beginPath();
+      ctx.arc(x, y, 1, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(255,107,53,0.15)';
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+
+  // Event horizon
+  const ghBH = ctx.createRadialGradient(cx, cy, 0, cx, cy, R_BH);
+  ghBH.addColorStop(0, '#000000');
+  ghBH.addColorStop(0.7, '#050508');
+  ghBH.addColorStop(1, '#0a0a14');
+  ctx.beginPath();
+  ctx.arc(cx, cy, R_BH, 0, Math.PI * 2);
+  ctx.fillStyle = ghBH;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,60,95,0.8)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Omega_H indicator arcs
+  ctx.save();
+  const na = 4;
+  for (let i = 0; i < na; i++) {
+    const a = bhAngle * OmegaH + (i / na) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R_BH + 6 + i * 4, a, a + 0.9);
+    ctx.strokeStyle = `rgba(255,60,95,${0.6 - i * 0.12})`;
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  ctx.font = 'bold 9px Share Tech Mono';
+  ctx.fillStyle = 'rgba(255,60,95,0.85)';
+  ctx.textAlign = 'center';
+  ctx.fillText('r₊', cx, cy + 4);
+  ctx.font = '9px Share Tech Mono';
+  ctx.fillStyle = 'rgba(255,60,95,0.6)';
+  ctx.fillText('Ω_H = ' + OmegaH.toFixed(1), cx, cy + R_BH + 16);
+}
+
+function drawAmplitudeRing() {
+  if (amplitude <= 1.0) return;
+  const frac = Math.min((amplitude - 1) / 60, 1);
+  const ringR = R_ERGO + (Rm - R_ERGO) * frac;
+  ctx.beginPath();
+  ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
+  ctx.strokeStyle = `rgba(6,214,160,${0.15 + frac * 0.25})`;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3,5]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawLabels() {
+  ctx.font = '9.5px Share Tech Mono';
+  ctx.fillStyle = 'rgba(74,90,128,0.8)';
+  ctx.textAlign = 'right';
+  ctx.fillText("BLACK HOLE BOMB · PRESS & TEUKOLSKY 1972", W - 10, H - 8);
+}
+
+// ── Bounce display ─────────────────────────────────────────────────────────
+function updateBounceDisplay() {
+  document.getElementById('bounceCount').textContent = bounces;
+  document.getElementById('s_n').textContent = bounces;
+  const ampDisp = amplitude.toFixed(2);
+  const energyDisp = (amplitude * amplitude).toFixed(2);
+  document.getElementById('s_amp').textContent = ampDisp + '×';
+  document.getElementById('s_energy').textContent = energyDisp + '×';
+  const pct = Math.min(amplitude / 80 * 100, 100);
+  document.getElementById('ampBar').style.width = pct + '%';
+
+  // phase
+  let phase = 'LINEAR';
+  if (amplitude > 10) phase = 'NONLINEAR';
+  if (amplitude > 40) phase = 'EXPLOSIVE';
+  document.getElementById('s_phase').textContent = phase;
+  document.getElementById('s_phase').style.color =
+    amplitude > 40 ? 'var(--horizon)' :
+    amplitude > 10 ? 'var(--ergo)' : 'var(--amp)';
+
+  document.getElementById('s_status').textContent =
+    running ? (amplitude > 40 ? 'EXPLOSIVE' : 'GROWING') : 'IDLE';
+}
+
+// ── Animation loop ─────────────────────────────────────────────────────────
+let last = null;
+function loop(ts) {
+  if (!last) last = ts;
+  const dt = Math.min((ts - last) / 1000, 0.05);
+  last = ts;
+
+  time += dt;
+  bhAngle += OmegaH * dt * 0.15;
+  ergoFlash  = Math.max(0, ergoFlash  - dt * 3);
+  mirrorFlash = Math.max(0, mirrorFlash - dt * 3);
+
+  ctx.clearRect(0, 0, W, H);
+  drawBG();
+  drawMirror();
+  drawAmplitudeRing();
+  drawErgosphere();
+  drawEventHorizon();
+  drawLabels();
+
+  // update / draw wave packets
+  wavePacks = wavePacks.filter(w => w.alive);
+  for (const w of wavePacks) { w.update(dt); w.draw(); }
+
+  // Auto-spawn more if running and few active
+  if (running && wavePacks.length < 3 && amplitude < 80) {
+    const ang = Math.random() * Math.PI * 2;
+    wavePacks.push(new WavePack(ang, 1, amplitude));
+  }
+
+  requestAnimationFrame(loop);
+}
+
+// ── Buttons ────────────────────────────────────────────────────────────────
+document.getElementById('startBtn').addEventListener('click', () => {
+  running = true;
+  document.getElementById('s_status').textContent = 'GROWING';
+  // Seed initial wave
+  for (let i = 0; i < 2; i++) {
+    const ang = (i / 2) * Math.PI * 2 + Math.random() * 0.5;
+    wavePacks.push(new WavePack(ang, 1, 1.0));
+  }
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  running = false;
+  wavePacks = [];
+  bounces = 0;
+  amplitude = 1.0;
+  ergoFlash = 0; mirrorFlash = 0;
+  updateBounceDisplay();
+  document.getElementById('s_status').textContent = 'IDLE';
+});
+
+readControls();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
