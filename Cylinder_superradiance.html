@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classical Superradiance</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;1,400&display=swap');
+
+  :root {
+    --bg: #05070f;
+    --panel: #090d1a;
+    --border: #1a2240;
+    --cyan: #00e5ff;
+    --gold: #ffd166;
+    --red: #ff4d6d;
+    --green: #06d6a0;
+    --text: #c8d8f0;
+    --muted: #4a5a80;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    color: var(--cyan);
+    letter-spacing: 0.02em;
+  }
+
+  header p {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 4px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .layout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    max-width: 860px;
+  }
+
+  canvas {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    display: block;
+  }
+
+  .panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px;
+  }
+
+  .panel-title {
+    font-size: 0.62rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+    font-size: 0.72rem;
+  }
+
+  .stat-label { color: var(--muted); }
+
+  .stat-val {
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+
+  .val-cyan { color: var(--cyan); }
+  .val-gold { color: var(--gold); }
+  .val-green { color: var(--green); }
+  .val-red { color: var(--red); }
+
+  .condition-box {
+    margin-top: 10px;
+    padding: 8px;
+    border-radius: 3px;
+    font-size: 0.68rem;
+    line-height: 1.6;
+    text-align: center;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  .cond-active {
+    background: rgba(6, 214, 160, 0.1);
+    border: 1px solid var(--green);
+    color: var(--green);
+  }
+
+  .cond-inactive {
+    background: rgba(255, 77, 109, 0.1);
+    border: 1px solid var(--red);
+    color: var(--red);
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .ctrl-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .ctrl-label {
+    font-size: 0.6rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 120px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--cyan);
+    cursor: pointer;
+  }
+
+  .ctrl-val {
+    font-size: 0.68rem;
+    color: var(--cyan);
+    font-weight: 600;
+  }
+
+  button {
+    background: transparent;
+    border: 1px solid var(--cyan);
+    color: var(--cyan);
+    padding: 6px 18px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  button:hover { background: var(--cyan); color: var(--bg); }
+
+  .formula {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--gold);
+    padding: 10px 14px;
+    width: 100%;
+    font-size: 0.7rem;
+    color: var(--gold);
+    line-height: 2;
+    border-radius: 0 4px 4px 0;
+  }
+
+  .formula span { color: var(--muted); font-size: 0.63rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Classical Superradiance</h1>
+  <p>Spinning Cylinder · Tangential Scattering · Energy Extraction</p>
+</header>
+
+<div class="layout">
+  <canvas id="canvas" width="640" height="360"></canvas>
+
+  <div class="controls">
+    <div class="ctrl-group">
+      <span class="ctrl-label">Ω (angular vel.)</span>
+      <input type="range" id="omegaSlider" min="0.5" max="5" step="0.1" value="2.5">
+      <span class="ctrl-val" id="omegaVal">2.5 rad/s</span>
+    </div>
+    <div class="ctrl-group">
+      <span class="ctrl-label">v₀ (incident speed)</span>
+      <input type="range" id="v0Slider" min="0.5" max="4" step="0.1" value="1.5">
+      <span class="ctrl-val" id="v0Val">1.5 m/s</span>
+    </div>
+    <div class="ctrl-group">
+      <span class="ctrl-label">R (cylinder radius)</span>
+      <input type="range" id="rSlider" min="40" max="120" step="5" value="80">
+      <span class="ctrl-val" id="rVal">80 px</span>
+    </div>
+    <button id="launchBtn">Launch</button>
+    <button id="resetBtn">Reset</button>
+  </div>
+
+  <div class="panels">
+    <div class="panel">
+      <div class="panel-title">Kinematics</div>
+      <div class="stat-row">
+        <span class="stat-label">v_surface = ΩR</span>
+        <span class="stat-val val-cyan" id="vSurf">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">v₀ (incident)</span>
+        <span class="stat-val val-gold" id="v0display">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">v_out (scattered)</span>
+        <span class="stat-val val-green" id="vOut">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">ΔKE / KE₀</span>
+        <span class="stat-val val-red" id="deltaKE">—</span>
+      </div>
+      <div class="condition-box" id="condBox">—</div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Superradiance Condition</div>
+      <div class="stat-row">
+        <span class="stat-label">ΩR > v₀ ?</span>
+        <span class="stat-val" id="condCheck">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Mode frequency ω</span>
+        <span class="stat-val val-gold" id="modeFreq">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">m (azimuthal)</span>
+        <span class="stat-val val-cyan">1</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Amplification factor</span>
+        <span class="stat-val val-green" id="ampFactor">—</span>
+      </div>
+      <div class="stat-row" style="margin-top:8px">
+        <span class="stat-label" style="font-size:0.62rem">Analogue: ω < mΩ</span>
+        <span class="stat-val val-muted" style="font-size:0.62rem;color:#4a5a80">Zel'dovich criterion</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="formula">
+    <span>Classical analogue of superradiance:</span><br>
+    v_out = 2·v_surface − v₀ = 2ΩR − v₀ &nbsp;&nbsp;[elastic, tangential collision]<br>
+    <span>Superradiance condition: &nbsp; v_surface > v₀ &nbsp;⟺&nbsp; ΩR > v₀ &nbsp;⟺&nbsp; ω < mΩ</span>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+const W = canvas.width, H = canvas.height;
+const cx = W / 2, cy = H / 2;
+
+let Omega = 2.5, v0 = 1.5, R = 80;
+let angle = 0;
+let cubes = [];
+let trailPoints = [];
+let running = false;
+let launched = false;
+
+// Controls
+const omegaSlider = document.getElementById('omegaSlider');
+const v0Slider = document.getElementById('v0Slider');
+const rSlider = document.getElementById('rSlider');
+
+function updateControls() {
+  Omega = parseFloat(omegaSlider.value);
+  v0 = parseFloat(v0Slider.value);
+  R = parseFloat(rSlider.value);
+  document.getElementById('omegaVal').textContent = Omega.toFixed(1) + ' rad/s';
+  document.getElementById('v0Val').textContent = v0.toFixed(1) + ' m/s';
+  document.getElementById('rVal').textContent = R.toFixed(0) + ' px';
+  updateStats();
+}
+
+omegaSlider.addEventListener('input', updateControls);
+v0Slider.addEventListener('input', updateControls);
+rSlider.addEventListener('input', updateControls);
+
+function updateStats(vout) {
+  const vSurf = (Omega * R / 30).toFixed(2); // scaled for display
+  const vSurfRaw = Omega * R;
+  document.getElementById('vSurf').textContent = Omega.toFixed(2) + '·R = ' + vSurfRaw.toFixed(1);
+  document.getElementById('v0display').textContent = v0.toFixed(2);
+
+  const vOutVal = 2 * Omega * R / 30 - v0; // scaled
+  const vOutRaw = 2 * Omega * R - v0 * 30;
+  const isSuper = (Omega * R) > (v0 * 30);
+  const vOutDisplay = vout !== undefined ? vout.toFixed(2) : '—';
+  document.getElementById('vOut').textContent = vOutDisplay;
+
+  const dke = vout !== undefined ? ((vout * vout - v0 * v0) / (v0 * v0) * 100).toFixed(1) + ' %' : '—';
+  document.getElementById('deltaKE').textContent = dke;
+
+  const condBox = document.getElementById('condBox');
+  if (isSuper) {
+    condBox.className = 'condition-box cond-active';
+    condBox.textContent = 'SUPERRADIANT: ΩR > v₀ · Energy Extracted from Cylinder';
+  } else {
+    condBox.className = 'condition-box cond-inactive';
+    condBox.textContent = 'NON-SUPERRADIANT: ΩR < v₀ · Cube Slowed by Friction';
+  }
+
+  document.getElementById('condCheck').textContent = isSuper ? '✓  YES' : '✗  NO';
+  document.getElementById('condCheck').style.color = isSuper ? 'var(--green)' : 'var(--red)';
+
+  const omega_mode = v0 / R * 30;
+  document.getElementById('modeFreq').textContent = omega_mode.toFixed(3);
+
+  const amp = vout !== undefined && v0 > 0 ? (vout / v0).toFixed(3) : '—';
+  document.getElementById('ampFactor').textContent = amp;
+}
+
+// Cube class
+class Cube {
+  constructor() {
+    this.size = 12;
+    // Start from the left, tangent approach at top of cylinder
+    this.x = -20;
+    this.y = cy - R - 2;
+    this.vx = v0 * 2; // pixel speed
+    this.vy = 0;
+    this.color = '#ffd166';
+    this.phase = 'approach'; // approach, collide, depart
+    this.collided = false;
+    this.vout = null;
+    this.trail = [];
+    this.opacity = 1;
+  }
+
+  update(dt) {
+    if (this.phase === 'approach') {
+      this.x += this.vx * dt * 60;
+      this.trail.push({ x: this.x, y: this.y, t: Date.now() });
+      if (this.trail.length > 80) this.trail.shift();
+
+      // Check tangential contact: when cube reaches x = cx - R (left edge of cylinder at cube's y)
+      // Cube is traveling tangentially at y = cy - R
+      const contactX = cx - this.size / 2;
+      if (this.x + this.size / 2 >= contactX - 2) {
+        this.phase = 'interact';
+        this.interactTimer = 0;
+      }
+    } else if (this.phase === 'interact') {
+      this.interactTimer += dt;
+      // During interaction: lerp position along cylinder surface tangent
+      this.x += this.vx * dt * 60 * 0.3;
+
+      if (this.interactTimer > 0.18) {
+        // Apply velocity kick: v_out = 2*v_surface - v_in (elastic with moving wall)
+        const vSurface = Omega * R * 0.067; // scale Omega*R to pixel/frame
+        this.vout = 2 * vSurface - v0 * 2;
+        this.vx = this.vout;
+        this.color = this.vout > v0 * 2 ? '#06d6a0' : '#ff4d6d';
+        this.phase = 'depart';
+        updateStats(Math.abs(this.vout / 2));
+      }
+    } else if (this.phase === 'depart') {
+      this.x += this.vx * dt * 60;
+      this.vy += 0; // no gravity, purely tangential
+      this.trail.push({ x: this.x, y: this.y, t: Date.now() });
+      if (this.trail.length > 120) this.trail.shift();
+
+      if (this.x > W + 40 || this.x < -40) this.opacity -= dt * 0.5;
+    }
+  }
+
+  draw() {
+    // Draw trail
+    for (let i = 0; i < this.trail.length; i++) {
+      const alpha = (i / this.trail.length) * 0.5 * this.opacity;
+      ctx.fillStyle = this.phase === 'depart'
+        ? `rgba(6,214,160,${alpha})`
+        : `rgba(255,209,102,${alpha})`;
+      const s = 3 + (i / this.trail.length) * 5;
+      ctx.fillRect(this.trail[i].x - s / 2, this.trail[i].y - s / 2, s, s);
+    }
+
+    // Draw cube
+    ctx.save();
+    ctx.globalAlpha = this.opacity;
+    ctx.strokeStyle = this.color;
+    ctx.lineWidth = 1.5;
+    ctx.fillStyle = this.color + '33';
+    ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+    ctx.strokeRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+
+    // Velocity arrow
+    if (this.phase !== 'interact') {
+      const arrowLen = Math.min(40, Math.abs(this.vx) * 8);
+      const dir = this.vx >= 0 ? 1 : -1;
+      ctx.beginPath();
+      ctx.moveTo(this.x + dir * this.size / 2, this.y);
+      ctx.lineTo(this.x + dir * (this.size / 2 + arrowLen), this.y);
+      ctx.strokeStyle = this.color;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // Arrowhead
+      ctx.beginPath();
+      ctx.moveTo(this.x + dir * (this.size / 2 + arrowLen), this.y);
+      ctx.lineTo(this.x + dir * (this.size / 2 + arrowLen - 6), this.y - 4);
+      ctx.lineTo(this.x + dir * (this.size / 2 + arrowLen - 6), this.y + 4);
+      ctx.closePath();
+      ctx.fillStyle = this.color;
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+}
+
+function drawCylinder() {
+  // Glow effect
+  const grd = ctx.createRadialGradient(cx, cy, R * 0.7, cx, cy, R * 1.2);
+  grd.addColorStop(0, 'rgba(0,229,255,0.03)');
+  grd.addColorStop(1, 'rgba(0,229,255,0)');
+  ctx.fillStyle = grd;
+  ctx.beginPath();
+  ctx.arc(cx, cy, R * 1.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Cylinder body
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.fillStyle = '#080e1f';
+  ctx.fill();
+  ctx.strokeStyle = '#00e5ff';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Rotation stripes (spin indicator)
+  const nStripes = 8;
+  for (let i = 0; i < nStripes; i++) {
+    const a = angle + (i / nStripes) * Math.PI * 2;
+    const x1 = cx + Math.cos(a) * R * 0.3;
+    const y1 = cy + Math.sin(a) * R * 0.3;
+    const x2 = cx + Math.cos(a) * R * 0.9;
+    const y2 = cy + Math.sin(a) * R * 0.9;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = 'rgba(0,229,255,0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Center dot
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+  ctx.fillStyle = '#00e5ff';
+  ctx.fill();
+
+  // Omega label
+  ctx.font = '600 13px IBM Plex Mono';
+  ctx.fillStyle = '#00e5ff';
+  ctx.textAlign = 'center';
+  ctx.fillText('Ω = ' + Omega.toFixed(1), cx, cy + R + 20);
+
+  // Rotation arrow arc
+  ctx.beginPath();
+  ctx.arc(cx, cy, R + 12, -0.8, 0.8);
+  ctx.strokeStyle = 'rgba(0,229,255,0.4)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  // arrowhead at end of arc
+  const aEnd = 0.8;
+  const ax = cx + (R + 12) * Math.cos(aEnd);
+  const ay = cy + (R + 12) * Math.sin(aEnd);
+  ctx.beginPath();
+  ctx.moveTo(ax, ay);
+  ctx.lineTo(ax - 6, ay - 4);
+  ctx.lineTo(ax + 2, ay - 7);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(0,229,255,0.6)';
+  ctx.fill();
+}
+
+function drawGrid() {
+  ctx.strokeStyle = 'rgba(26,34,64,0.8)';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x < W; x += 40) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = 0; y < H; y += 40) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+}
+
+function drawLabels() {
+  // Tangent line (trajectory guide)
+  ctx.setLineDash([4, 6]);
+  ctx.strokeStyle = 'rgba(255,209,102,0.2)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, cy - R);
+  ctx.lineTo(W, cy - R);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Label
+  ctx.font = '11px IBM Plex Mono';
+  ctx.fillStyle = 'rgba(255,209,102,0.5)';
+  ctx.textAlign = 'left';
+  ctx.fillText('tangential trajectory', 10, cy - R - 6);
+}
+
+let last = null;
+function loop(ts) {
+  if (!last) last = ts;
+  const dt = Math.min((ts - last) / 1000, 0.05);
+  last = ts;
+
+  ctx.clearRect(0, 0, W, H);
+  drawGrid();
+
+  // Rotate cylinder
+  angle += Omega * dt * 0.5;
+
+  drawCylinder();
+  drawLabels();
+
+  // Update and draw cubes
+  cubes = cubes.filter(c => c.opacity > 0);
+  for (const c of cubes) {
+    c.update(dt);
+    c.draw();
+  }
+
+  // HUD
+  ctx.font = '10px IBM Plex Mono';
+  ctx.fillStyle = 'rgba(74,90,128,0.8)';
+  ctx.textAlign = 'right';
+  ctx.fillText('CLASSICAL SUPERRADIANCE · ZEL\'DOVICH 1971', W - 10, H - 8);
+
+  requestAnimationFrame(loop);
+}
+
+document.getElementById('launchBtn').addEventListener('click', () => {
+  cubes.push(new Cube());
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  cubes = [];
+  updateStats();
+});
+
+updateControls();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
